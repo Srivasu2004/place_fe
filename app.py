@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 # ======================
 # BACKEND URL
 # ======================
-BACKEND_URL = "http://127.0.0.1:8000"   # change this when deploying
+BACKEND_URL = "ORS_API_KEY"   # change this when deploying
 
 # ======================
 # HYDERABAD CENTER
