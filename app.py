@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-BACKEND_URL = "S_url"
+BACKEND_URL = "https://place-be-7.onrender.com"
 
 st.title("🧠 AI Resume Analyzer")
 
