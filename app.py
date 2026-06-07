@@ -1,66 +1,30 @@
 import streamlit as st
 import requests
-import folium
-from streamlit_folium import st_folium
-import polyline
 
-BACKEND_URL = "https://place-be-7.onrender.com"
+BACKEND_URL = "http://127.0.0.1:8000"
 
-START = [17.3850, 78.4867]
+st.title("🧠 AI Resume Analyzer")
 
-st.title("🧭 Live Navigation System (AI + Real Routes)")
+# Upload Resume
+uploaded_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
 
+if uploaded_file:
+    files = {"file": uploaded_file.getvalue()}
+    res = requests.post(f"{BACKEND_URL}/upload-resume", files=files)
+    st.success(res.json()["message"])
 
-# Sample destinations
-places = {
-    "Charminar": [17.3616, 78.4747],
-    "Golconda Fort": [17.3833, 78.4011],
-    "Hussain Sagar": [17.4239, 78.4738]
-}
+# Job Matching
+st.subheader("📌 Job Matcher")
+job_desc = st.text_area("Paste Job Description")
 
-place = st.selectbox("Choose Destination", list(places.keys()))
-dest = places[place]
+if st.button("Match Job"):
+    res = requests.post(f"{BACKEND_URL}/job-match", params={"job_description": job_desc})
+    st.write("Match Score:", res.json()["job_match_score"])
 
+# ATS Score
+st.subheader("📊 ATS Score")
+keywords = st.text_input("Enter ATS Keywords (comma separated)")
 
-if st.button("🚀 Start Navigation"):
-
-    res = requests.get(
-        f"{BACKEND_URL}/navigate",
-        params={
-            "dest_lat": dest[0],
-            "dest_lng": dest[1]
-        }
-    )
-
-    data = res.json()
-
-    if "error" in data:
-        st.error(data["error"])
-    else:
-
-        st.success(f"Distance: {data['distance_km']} km")
-        st.info(f"Duration: {data['duration_min']} min")
-
-        # =========================
-        # TURN-BY-TURN DIRECTIONS
-        # =========================
-        st.subheader("🧭 Turn-by-Turn Navigation")
-
-        for i, step in enumerate(data["instructions"], 1):
-            st.write(f"{i}. {step['instruction']}")
-
-        # =========================
-        # MAP
-        # =========================
-        m = folium.Map(location=START, zoom_start=12)
-
-        folium.Marker(START, popup="Start", icon=folium.Icon(color="red")).add_to(m)
-        folium.Marker(dest, popup=place, icon=folium.Icon(color="green")).add_to(m)
-
-        # Decode real route
-        route_points = polyline.decode(data["geometry"])
-
-        folium.PolyLine(route_points, color="blue", weight=5).add_to(m)
-
-        st.subheader("🗺️ Live Route Map")
-        st_folium(m, width=1000, height=500)
+if st.button("Calculate ATS Score"):
+    res = requests.post(f"{BACKEND_URL}/ats-score", params={"keywords": keywords})
+    st.write("ATS Score:", res.json()["ats_score"])
