@@ -3,7 +3,7 @@ import requests
 import folium
 from streamlit_folium import st_folium
 
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = "S_url"
 
 HYDERABAD = [17.3850, 78.4867]
 
