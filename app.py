@@ -2,29 +2,30 @@ import streamlit as st
 import requests
 import folium
 from streamlit_folium import st_folium
+import polyline
 
-BACKEND_URL = "S_url"
+BACKEND_URL = "https://place-be-7.onrender.com"
 
-HYDERABAD = [17.3850, 78.4867]
+START = [17.3850, 78.4867]
 
-st.title("🗺️ AI Travel + Real Route Map")
+st.title("🧭 Live Navigation System (AI + Real Routes)")
 
 
-# Sample place
+# Sample destinations
 places = {
     "Charminar": [17.3616, 78.4747],
     "Golconda Fort": [17.3833, 78.4011],
     "Hussain Sagar": [17.4239, 78.4738]
 }
 
-place = st.selectbox("Select Place", list(places.keys()))
+place = st.selectbox("Choose Destination", list(places.keys()))
 dest = places[place]
 
 
-if st.button("🚗 Show Real Route"):
+if st.button("🚀 Start Navigation"):
 
     res = requests.get(
-        f"{BACKEND_URL}/route",
+        f"{BACKEND_URL}/navigate",
         params={
             "dest_lat": dest[0],
             "dest_lng": dest[1]
@@ -36,34 +37,30 @@ if st.button("🚗 Show Real Route"):
     if "error" in data:
         st.error(data["error"])
     else:
+
         st.success(f"Distance: {data['distance_km']} km")
         st.info(f"Duration: {data['duration_min']} min")
 
-        # ======================
+        # =========================
+        # TURN-BY-TURN DIRECTIONS
+        # =========================
+        st.subheader("🧭 Turn-by-Turn Navigation")
+
+        for i, step in enumerate(data["instructions"], 1):
+            st.write(f"{i}. {step['instruction']}")
+
+        # =========================
         # MAP
-        # ======================
-        m = folium.Map(location=HYDERABAD, zoom_start=10)
+        # =========================
+        m = folium.Map(location=START, zoom_start=12)
 
-        # Start marker
-        folium.Marker(HYDERABAD, popup="Hyderabad", icon=folium.Icon(color="red")).add_to(m)
-
-        # Destination marker
+        folium.Marker(START, popup="Start", icon=folium.Icon(color="red")).add_to(m)
         folium.Marker(dest, popup=place, icon=folium.Icon(color="green")).add_to(m)
 
-        # ======================
-        # REAL ROUTE LINE
-        # ======================
-        coords = data["route_geometry"]
+        # Decode real route
+        route_points = polyline.decode(data["geometry"])
 
-        # decode polyline
-        import polyline
-        route_points = polyline.decode(coords)
+        folium.PolyLine(route_points, color="blue", weight=5).add_to(m)
 
-        folium.PolyLine(
-            route_points,
-            color="blue",
-            weight=5,
-            opacity=0.8
-        ).add_to(m)
-
+        st.subheader("🗺️ Live Route Map")
         st_folium(m, width=1000, height=500)
