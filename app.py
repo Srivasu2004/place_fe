@@ -5,7 +5,7 @@ import folium
 
 from streamlit_folium import st_folium
 
-BACKEND_URL = "url_place"
+BACKEND_URL = "url_key"
 
 HYDERABAD_LAT = 17.3850
 HYDERABAD_LNG = 78.4867
