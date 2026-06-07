@@ -6,3 +6,8 @@ streamlit-folium
 fastapi
 uvicorn
 python-dotenv
+streamlit
+requests
+folium
+streamlit-folium
+polyline
