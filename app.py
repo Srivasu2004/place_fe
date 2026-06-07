@@ -1,92 +1,69 @@
 import streamlit as st
 import requests
-import json
+import folium
+from streamlit_folium import st_folium
 
-# ======================
-# BACKEND URL (FIXED)
-# ======================
-BACKEND_URL = "S_url"
+BACKEND_URL = "http://127.0.0.1:8000"
 
-# ======================
-# PAGE CONFIG
-# ======================
-st.set_page_config(
-    page_title="AI Travel Assistant",
-    layout="wide"
-)
+HYDERABAD = [17.3850, 78.4867]
 
-st.title("🌍 AI Travel Assistant")
-st.caption("Powered by FastAPI + Groq AI + Streamlit")
+st.title("🗺️ AI Travel + Real Route Map")
 
 
-# ======================
-# INPUT
-# ======================
-city = st.text_input("Enter City", "Hyderabad")
+# Sample place
+places = {
+    "Charminar": [17.3616, 78.4747],
+    "Golconda Fort": [17.3833, 78.4011],
+    "Hussain Sagar": [17.4239, 78.4738]
+}
 
-col1, col2 = st.columns(2)
-
-
-# ======================
-# AI BUTTON
-# ======================
-with col1:
-    if st.button("✨ Get AI Recommendations"):
-
-        try:
-            response = requests.get(
-                f"{BACKEND_URL}/ai-recommend",
-                params={"city": city},
-                timeout=20
-            )
-
-            data = response.json()
-            result_text = data.get("result", "")
-
-            st.subheader("🧠 AI Response")
-
-            try:
-                parsed = json.loads(result_text)
-
-                st.success(f"Top Places in {parsed['city']}")
-
-                for place in parsed["places"]:
-                    st.markdown(f"### 📍 {place['name']}")
-                    st.write(place["description"])
-                    st.write("⭐", place["rating"])
-                    st.divider()
-
-            except:
-                st.warning("Raw AI output")
-                st.text(result_text)
-
-        except Exception as e:
-            st.error(f"Backend Error: {e}")
+place = st.selectbox("Select Place", list(places.keys()))
+dest = places[place]
 
 
-# ======================
-# CHAT MODE
-# ======================
-with col2:
-    st.subheader("💬 Travel Chat")
+if st.button("🚗 Show Real Route"):
 
-    user_query = st.text_input("Ask anything about travel")
+    res = requests.get(
+        f"{BACKEND_URL}/route",
+        params={
+            "dest_lat": dest[0],
+            "dest_lng": dest[1]
+        }
+    )
 
-    if st.button("Ask AI"):
+    data = res.json()
 
-        try:
-            response = requests.get(
-                f"{BACKEND_URL}/ai-recommend",
-                params={"city": user_query},
-                timeout=20
-            )
+    if "error" in data:
+        st.error(data["error"])
+    else:
+        st.success(f"Distance: {data['distance_km']} km")
+        st.info(f"Duration: {data['duration_min']} min")
 
-            data = response.json()
-            st.write(data["result"])
+        # ======================
+        # MAP
+        # ======================
+        m = folium.Map(location=HYDERABAD, zoom_start=10)
 
-        except Exception as e:
-            st.error(f"Error: {e}")
+        # Start marker
+        folium.Marker(HYDERABAD, popup="Hyderabad", icon=folium.Icon(color="red")).add_to(m)
 
+        # Destination marker
+        folium.Marker(dest, popup=place, icon=folium.Icon(color="green")).add_to(m)
 
-st.markdown("---")
-st.caption("🚀 AI Travel Assistant using FastAPI + Groq + Streamlit")
+        # ======================
+        # REAL ROUTE LINE
+        # ======================
+        coords = data["route_geometry"]
+
+        # decode polyline
+        import polyline
+        route_points = polyline.decode(coords)
+
+        folium.PolyLine(
+            route_points,
+            color="blue",
+            weight=5,
+            opacity=0.8
+        ).add_to(m)
+
+        st_folium(m, width=1000, height=500)
